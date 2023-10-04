@@ -1,0 +1,25 @@
+{
+	"startLocationCode": "CDG",
+	"endAddressLine": "Avenue Anatole France, 5",
+	"endCityName": "Paris",
+	"endZipCode": "75007",
+	"endCountryCode": "FR",
+	"endName": "Souvenirs De La Tour",
+	"endGeoCode": "48.859466,2.2976965",
+	"transferType": "PRIVATE",
+	"startDateTime": "2023-11-10T10:30:00",
+	"providerCodes": "TXO",
+	"passengers": 2,
+	"startConnectedSegment": {
+		"transportationType": "FLIGHT",
+		"transportationNumber": "AF380",
+		"departure": {
+			"localDateTime": "2023-11-10T09:00:00",
+			"iataCode": "NCE"
+		},
+		"arrival": {
+			"localDateTime": "2023-11-10T10:00:00",
+			"iataCode": "CDG"
+		}
+	}
+}
