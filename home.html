@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Map Pin</title>
+  <style>
+    #map {
+      height: 400px;
+      width: 100%;
+    }
+	#result {
+		height: 10em;
+		width: 30em;
+  </style>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+  </head>
+<body>
+  <div id="map"></div>
+<div id="result"></div>
+<button id="searchButton" disabled="true">Search</button>
+
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+<script>
+// Initialize the map
+var map = L.map('map').setView([48.8566, 2.3522], 12);
+
+// Create a tile layer using OpenStreetMap
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors',
+  maxZoom: 18,
+}).addTo(map);
+L.Control.geocoder().addTo(map);
+
+// Define a marker variable
+var marker;
+
+// Add a click event listener to set the pin
+map.on('click', function(event) {
+  placeMarker(event.latlng);
+});
+
+// Function to place a marker on the map
+function placeMarker(location) {
+  // Remove existing marker, if any
+  if (marker) {
+    map.removeLayer(marker);
+  }
+
+  // Create a new marker
+  marker = L.marker(location).addTo(map);
+  readPinData()
+}
+
+// address data
+var streetAddress, houseNumber, city, zipCode, countryCode, latitude, longitude;
+
+// Function to retrieve location data on button click
+function readPinData() {
+  if (marker) {
+    // Retrieve the position of the marker
+    var position = marker.getLatLng();
+
+    // Retrieve the address details using reverse geocoding
+    var geocoder = new L.Control.Geocoder.Nominatim();
+    geocoder.reverse(position, map.options.crs.scale(18), function (results) {
+      if (results.length > 0) {
+		console.log(results[0].properties.address)
+        // Retrieve the address components
+        var address = results[0].properties.address;
+        // Extract the required data
+        streetAddress = address.road || '';
+		houseNumber = address.house_number || '';
+        city = address.city || '';
+        zipCode = address.postcode || '';
+        countryCode = address.country_code.toUpperCase() || '';
+        latitude = position.lat.toFixed(6);
+        longitude = position.lng.toFixed(6);
+
+        // Construct the resulting data string
+        var result =
+          'Street Address: ' + streetAddress + ' ' + houseNumber +
+          '<br/>' +
+          'City: ' + city +
+          '<br/>' +
+          'Zip Code: ' + zipCode +
+          '<br/>' +
+          'Country Code: ' + countryCode;
+
+        // Set the resulting data in the text field
+        document.getElementById('result').innerHTML = result;
+        // Enable the Search button
+        document.getElementById('searchButton').disabled = false;
+
+      } else {
+        document.getElementById('result').textContent = 'No address found.';
+      }
+    });
+  } else {
+    document.getElementById('result').textContent = 'Please set a pin on the map.';
+    // Disable the Search button
+    document.getElementById('searchButton').disabled = true;
+  }
+}
+
+// Function to handle button click and send data to the server
+function sendDataToServer() {
+  // Construct the query string with the address data
+  var queryString =
+    '/search?streetAddress=' +
+    encodeURIComponent(streetAddress) +
+    '&houseNumber=' +
+    encodeURIComponent(houseNumber) +
+    '&city=' +
+    encodeURIComponent(city) +
+    '&zipCode=' +
+    encodeURIComponent(zipCode) +
+    '&countryCode=' +
+    encodeURIComponent(countryCode) +
+    '&latitude=' +
+    encodeURIComponent(latitude) +
+    '&longitude=' +
+    encodeURIComponent(longitude) +
+    '&endLocationCode=' +
+    encodeURIComponent('CDG');
+
+  // Send the query string to the server
+  fetch(queryString)
+    .then(function(response) {
+      // Handle the response from the server
+      // ...
+    })
+    .catch(function(error) {
+      console.error('Error:', error);
+    });
+}
+
+// Add event listener to the search button
+var searchButton = document.getElementById('searchButton');
+searchButton.addEventListener('click', sendDataToServer);
+
+  </script>
+</body>
+</html>

@@ -5,23 +5,23 @@ import (
 	"net/http"
 )
 
-func startServer() {
-	mux := http.DefaultServeMux
+func startServer(a Amadeus) {
+	mux := http.NewServeMux()
 
 	// Route for the search form page
-	mux.HandleFunc("/", searchFormHandler)
+	mux.HandleFunc("/", a.HomeHandler)
 
-	// Route for submitting the search form
-	mux.HandleFunc("/search", searchResultsHandler)
+	// Route for submitting the search
+	mux.HandleFunc("/search", a.SearchHandler)
+
+	// Route for the booking handler
+	mux.HandleFunc("/booking", a.BookingHandler)
 
 	// Route for the booking confirmation page
-	mux.HandleFunc("/booking", bookingConfirmationHandler)
-
-	// Route for the booking receipt page
-	mux.HandleFunc("/receipt", bookingReceiptHandler)
+	mux.HandleFunc("/bookingconfirmation", a.BookingConfirmationHandler)
 
 	// Start the server
 	go func() {
-		log.Fatal(http.ListenAndServe(":8080", mux))
+		log.Fatal(http.ListenAndServe("localhost:8020", mux))
 	}()
 }
