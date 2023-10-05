@@ -38,7 +38,7 @@ func (a *app) SearchHandler(w http.ResponseWriter, r *http.Request) {
 	// Call the Amadeus Transfer Search API
 	// (see internal/amadeus/search.go)
 
-	response, err := a.ac.Search(searchParams)
+	response, err := a.amadeusClient.Search(searchParams)
 	if err != nil {
 		template.Must(template.New("searchError").Parse(searchErrorTemplate)).Execute(w, struct {
 			Search amadeus.SearchParameters

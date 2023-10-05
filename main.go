@@ -9,7 +9,7 @@ import (
 )
 
 type app struct {
-	ac *amadeus.Client
+	amadeusClient *amadeus.Client
 }
 
 func main() {
@@ -19,7 +19,7 @@ func main() {
 
 	// Start the application
 	app := &app{
-		ac: amadeus.New(),
+		amadeusClient: amadeus.New(),
 	}
 	startServer(app)
 

@@ -7,13 +7,14 @@ import (
 	"appliedgo.net/what"
 )
 
+// BookingHandler receives a query URL containing offer ID, queries the Amadeus Transfer Booking API, and renders a new page with a booking confirmation
 func (a *app) BookingHandler(w http.ResponseWriter, r *http.Request) {
 	// Get the offer ID from the query string
 	offerID := r.URL.Query().Get("offerId")
 
 	// Call the Amadeus Transfer Booking API
 	// (see internal/amadeus/book.go)
-	response, err := a.ac.Book(offerID)
+	response, err := a.amadeusClient.Book(offerID)
 	if err != nil {
 		// Render the erorr nicely
 		template.Must(template.New("bookingError").Parse(bookingErrorTemplate)).Execute(w, err)
