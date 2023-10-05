@@ -77,10 +77,6 @@ const geocoderControl = L.Control.geocoder({
     }
     marker = L.marker(result.center).addTo(map);
 
-    // Do something with the searchMarker, e.g., access its position
-    const markerPosition = marker.getLatLng();
-    console.log('Search marker position:', markerPosition);
-
     // Move the map view to the selected location
     map.setView(result.center);
     readMarkerData();
@@ -116,12 +112,12 @@ const geocoderControl = L.Control.geocoder({
       var geocoder = new L.Control.Geocoder.Nominatim();
       geocoder.reverse(position, map.options.crs.scale(18), function (results) {
         if (results.length > 0) {
-      console.log(results[0].properties.address)
+          console.log(results[0].properties.address)
           // Retrieve the address components
           var address = results[0].properties.address;
           // Extract the required data
           streetAddress = address.road || '';
-      houseNumber = address.house_number || '';
+          houseNumber = address.house_number || '';
           // Nominatim returns either a city, a town or a village name for a given location.
           city = (address.city || '') + (address.town || '') + (address.village || '');
           zipCode = address.postcode || '';
