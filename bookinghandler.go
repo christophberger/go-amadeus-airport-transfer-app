@@ -44,7 +44,7 @@ var bookingConfirmationTemplate = `<html>
 	<h1>Booking Confirmation</h1>
 	<p>Reference: {{.Data.Reference}}</p>
 	<p>Booking ID: {{.Data.ID}}</p>
-	<p>Thank you for your booking!</p>
+	<p>Thank you for travelling with us!</p>
 	<p><a href="/">New search</a></p>
 </body>
 </html>`
@@ -52,6 +52,8 @@ var bookingConfirmationTemplate = `<html>
 var bookingErrorTemplate = `<html>
 <body>
 	<h1>Booking Error</h1>
+	<p>We're sorry, but there was an error with your booking.</p>
 	<p>{{.}}</p>
 	<p><a href="/">New search</a></p>
-</body>`
+</body>
+</html>`

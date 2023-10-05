@@ -40,7 +40,10 @@ func (a *app) SearchHandler(w http.ResponseWriter, r *http.Request) {
 
 	response, err := a.ac.Search(searchParams)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		template.Must(template.New("searchError").Parse(searchErrorTemplate)).Execute(w, struct {
+			Search amadeus.SearchParameters
+			Error  string
+		}{searchParams, err.Error()})
 		return
 	}
 
@@ -117,7 +120,19 @@ const incompleteAddressTemplate = `<html>
   <p>City: {{.StartCityName}}</p>
   <p>Zip code: {{.StartZipCode}}</p>
   <p>Country code: {{.StartCountryCode}}</p>
-  <p>Latitude: {{.StartGeoCode}}</p>
-  <p>Longitude: {{.StartGeoCode}}</p>
   <p><a href="/">New search</a></p>
-</body>`
+</body>
+</html>`
+
+const searchErrorTemplate = `<html>
+<body>
+  <h1>Search failed</h1>
+  <p>We're sorry, but there was an error with your search.</p>
+  <p><strong>{{.Error}}</strong></p>
+  <p>Start address: {{.Search.StartAddressLine}}<br/>
+  City: {{.Search.StartCityName}}<br/>
+  Zip code: {{.Search.StartZipCode}}<br/>
+  Country code: {{.Search.StartCountryCode}}</p>
+  <p><a href="/">New search</a></p>
+</body>
+</html>`
