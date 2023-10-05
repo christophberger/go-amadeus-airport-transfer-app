@@ -3,8 +3,6 @@ package main
 import (
 	"html/template"
 	"net/http"
-
-	"appliedgo.net/what"
 )
 
 // BookingHandler receives a query URL containing offer ID, queries the Amadeus Transfer Booking API, and renders a new page with a booking confirmation
@@ -20,8 +18,6 @@ func (a *app) BookingHandler(w http.ResponseWriter, r *http.Request) {
 		template.Must(template.New("bookingError").Parse(bookingErrorTemplate)).Execute(w, err)
 		return
 	}
-
-	what.Happens("Response: %s", response)
 
 	// Render the booking receipt template
 	tmpl, err := template.New("bookingReceipt").Parse(bookingConfirmationTemplate)
