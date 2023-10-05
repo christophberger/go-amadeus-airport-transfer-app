@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Map Pin</title>
+  <title>Airport Transfer Search</title>
   <style>
     #map {
       height: 400px;
@@ -49,7 +49,7 @@
   L.Control.geocoder().addTo(map);
 
   // variables
-  var marker;
+  var marker, searchMarker;
   var streetAddress, houseNumber, city, zipCode, countryCode, latitude, longitude;
   var airport;
   var datetime;
@@ -59,8 +59,37 @@
     startDateTime.setTime(startDateTime.getTime() + 24*60*60*1000 - startDateTime.getTimezoneOffset()*60*1000);
     document.getElementById("datetime").value = startDateTime.toISOString().slice(0, 16);
 
+// Create a geocoder control and add it to the map
+const geocoderControl = L.Control.geocoder({
+  defaultMarkGeocode: false, // disable the default marker creation
+  collapsed: false, // expand the search control by default
+  position: 'topright' // adjust the position as needed
+})
+  .on('markgeocode', function (e) {
+    // This event is triggered when a geocoding result is selected
 
-  // Add a click event listener to set the pin
+    // Get the selected location
+    const result = e.geocode;
+
+    // Create a new marker at the selected location
+    if (marker) {
+      map.removeLayer(marker);
+    }
+    marker = L.marker(result.center).addTo(map);
+
+    // Do something with the searchMarker, e.g., access its position
+    const markerPosition = marker.getLatLng();
+    console.log('Search marker position:', markerPosition);
+
+    // Move the map view to the selected location
+    map.setView(result.center);
+    readMarkerData();
+  });
+
+  // Add the geocoder control to the map
+  geocoderControl.addTo(map);
+
+  // Add a click event listener to set the marker
   map.on('click', function(event) {
     placeMarker(event.latlng);
   });
@@ -74,12 +103,11 @@
 
     // Create a new marker
     marker = L.marker(location).addTo(map);
-    readPinData();
-    airport = getAirport();
+    readMarkerData();
   }
 
   // Retrieve location data from marker
-  function readPinData() {
+  function readMarkerData() {
     if (marker) {
       // Retrieve the position of the marker
       var position = marker.getLatLng();
@@ -121,7 +149,7 @@
         }
       });
     } else {
-      document.getElementById('result').textContent = 'Please set a pin on the map.';
+      document.getElementById('result').textContent = 'Please set a marker on the map.';
       // Disable the Search button
       document.getElementById('searchButton').disabled = true;
     }
@@ -161,7 +189,7 @@
       '&longitude=' +
       encodeURIComponent(longitude) +
       '&endLocationCode=' +
-      encodeURIComponent(airport) +
+      encodeURIComponent(getAirport()) +
       '&startDateTime=' +
       encodeURIComponent(getDateTime());
 
