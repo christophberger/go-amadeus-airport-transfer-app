@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-func startServer(a Amadeus) {
+func startServer(a *app) {
 	mux := http.NewServeMux()
 
 	// Route for the search form page
@@ -16,9 +16,6 @@ func startServer(a Amadeus) {
 
 	// Route for the booking handler
 	mux.HandleFunc("/booking", a.BookingHandler)
-
-	// Route for the booking confirmation page
-	mux.HandleFunc("/bookingconfirmation", a.BookingConfirmationHandler)
 
 	// Start the server
 	go func() {

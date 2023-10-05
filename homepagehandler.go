@@ -8,7 +8,7 @@ import (
 //go:embed home.html
 var homeHTML []byte
 
-func (a *Amadeus) HomeHandler(w http.ResponseWriter, r *http.Request) {
+func (a *app) HomeHandler(w http.ResponseWriter, r *http.Request) {
 	// The "/" pattern matches everything, so we need to check
 	// that we're at the root here.
 	if r.URL.Path != "/" {

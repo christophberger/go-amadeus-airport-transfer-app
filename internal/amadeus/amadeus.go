@@ -1,19 +1,18 @@
-package main
+package amadeus
 
-import "os"
+import (
+	"time"
+)
 
-type Amadeus struct {
-	baseURL  string
-	clientID string
-	secret   string
-	token    string
+type Client struct {
+	baseURL     string
+	accessToken string
+	expiration  time.Time
 }
 
-func New() *Amadeus {
-	return &Amadeus{
-		baseURL:  "https://test.api.amadeus.com/v1",
-		clientID: os.Getenv("AMADEUS_CLIENT_ID"),
-		secret:   os.Getenv("AMADEUS_SECRET"),
+func New() *Client {
+	return &Client{
+		baseURL: "https://test.api.amadeus.com/v1",
 	}
 }
 
