@@ -9,8 +9,8 @@ import (
 	"time"
 )
 
-func (a *Client) Search(p SearchParameters) (SearchResponse, error) {
-	url := a.baseURL + "/shopping/transfer-offers"
+func (c *Client) Search(p SearchParameters) (SearchResponse, error) {
+	url := c.baseURL + "/shopping/transfer-offers"
 	method := "POST"
 
 	params, err := json.Marshal(p)
@@ -28,8 +28,14 @@ func (a *Client) Search(p SearchParameters) (SearchResponse, error) {
 	if err != nil {
 		return SearchResponse{}, fmt.Errorf("Search: http.NewRequest: %w", err)
 	}
+
+	token, err := c.token()
+	if err != nil {
+		return SearchResponse{}, fmt.Errorf("Search: a.token: %w", err)
+	}
+
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Authorization", "Bearer "+a.token())
+	req.Header.Add("Authorization", "Bearer "+token)
 
 	res, err := client.Do(req)
 	if err != nil {

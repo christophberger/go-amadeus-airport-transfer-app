@@ -1,19 +1,17 @@
 package amadeus
 
-import (
-	"time"
-)
-
 type Client struct {
-	baseURL     string
-	accessToken string
-	expiration  time.Time
+	baseURL       string
+	accessTokenCh chan string
+	tokenErrorCh  chan error
 }
 
 func New() *Client {
-	return &Client{
+	c := &Client{
 		baseURL: "https://test.api.amadeus.com/v1",
 	}
+	c.startTokenFetcher() // sets c.accessTokenCh and c.tokenErrorCh
+	return c
 }
 
 type SearchParameters struct {

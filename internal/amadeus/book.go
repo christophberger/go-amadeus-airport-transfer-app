@@ -86,8 +86,14 @@ func (c *Client) Book(offerId string) (BookingResponse, error) {
 	if err != nil {
 		return BookingResponse{}, fmt.Errorf("book: http.NewRequest: %w", err)
 	}
+
+	token, err := c.token()
+	if err != nil {
+		return BookingResponse{}, fmt.Errorf("book: c.token: %w", err)
+	}
+
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Authorization", "Bearer "+c.token())
+	req.Header.Add("Authorization", "Bearer "+token)
 
 	res, err := client.Do(req)
 	if err != nil {

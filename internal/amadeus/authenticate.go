@@ -10,29 +10,53 @@ import (
 	"time"
 )
 
-// token returns the current access token. If none exists yet, or if the existing one has expired, it fetches a new one from the Amadeus authentication API.
-func (c *Client) token() string {
-	if c.accessToken == "" || time.Now().After(c.expiration) {
-		// fetch new token from the API
-		err := c.authenticate()
-		if err != nil {
-			return err.Error()
-		}
+// token returns the current access token. If none exists yet, or if the existing one has expired, it fetches a new one from the Amadeus authentication API. If fetching fails, token returns an error.
+func (c *Client) token() (string, error) {
+	if len(c.tokenErrorCh) > 0 { // works, because tokenErrorCh is buffered
+		e := <-c.tokenErrorCh
+		return "", e
 	}
-	return c.accessToken
+	t := <-c.accessTokenCh
+	return t, nil
 }
 
-// authenticate reads client ID and secret from the environment variables and updates the access tokend and expiration time from the Amadeus authentication API.
-func (c *Client) authenticate() error {
+// startTokenFetcher starts a goroutine that fetches a new access token from the Amadeus authentication API if there is none yet, or if the current one expires. It returns channels for returning the current token, or an error if the token could not be fetched.
+func (c *Client) startTokenFetcher() {
+	var token string
+	var expiration time.Time
+	var err error
 
-	url := c.baseURL + "/security/oauth2/token"
+	c.accessTokenCh = make(chan string)
+	c.tokenErrorCh = make(chan error, 1)
+
+	go func() {
+		for {
+			select {
+			case <-time.After(time.Until(expiration.Add(-60 * time.Second))):
+				// fetch new token from the API
+				token, expiration, err = authenticate(c.baseURL)
+				if err != nil {
+					c.tokenErrorCh <- err
+					return
+				}
+			case c.accessTokenCh <- token:
+				// someone has read the token, nothing to do
+			}
+		}
+	}()
+}
+
+// authenticate reads client ID and secret from the environment variables and updates the access token and expiration time from the Amadeus authentication API.
+func authenticate(baseURL string) (string, time.Time, error) {
+
+	url := baseURL + "/security/oauth2/token"
 	method := "POST"
 
 	id := os.Getenv("AMADEUS_CLIENT_ID")
 	secret := os.Getenv("AMADEUS_CLIENT_SECRET")
 
 	if id == "" || secret == "" {
-		return fmt.Errorf("authenticate: missing client ID or secret (check the environment variables AMADEUS_CLIENT_ID and AMADEUS_CLIENT_SECRET)")
+		return "", time.Time{}, fmt.Errorf("authenticate: missing client ID or secret (check the environment variables AMADEUS_CLIENT_ID and AMADEUS_CLIENT_SECRET)")
 	}
 
 	payload := strings.NewReader("client_id=" + id +
@@ -45,19 +69,19 @@ func (c *Client) authenticate() error {
 	req, err := http.NewRequest(method, url, payload)
 
 	if err != nil {
-		return fmt.Errorf("authenticate: http.NewRequest: %w", err)
+		return "", time.Time{}, fmt.Errorf("authenticate: http.NewRequest: %w", err)
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	res, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("authenticate: client.Do: %w", err)
+		return "", time.Time{}, fmt.Errorf("authenticate: client.Do: %w", err)
 	}
 	defer res.Body.Close()
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return fmt.Errorf("authenticate: io.ReadAll: %w", err)
+		return "", time.Time{}, fmt.Errorf("authenticate: io.ReadAll: %w", err)
 	}
 
 	// Unmarshal the response. AuthResponse is a struct that combines
@@ -67,10 +91,10 @@ func (c *Client) authenticate() error {
 	var authResponse AuthResponse
 	err = json.Unmarshal(body, &authResponse)
 	if err != nil {
-		return fmt.Errorf("authenticate: json.Unmarshal: %w", err)
+		return "", time.Time{}, fmt.Errorf("authenticate: json.Unmarshal: %w", err)
 	}
 	if authResponse.Error != "" {
-		return fmt.Errorf("authenticate: %w (%s: %s (error: %s, code: %d)",
+		return "", time.Time{}, fmt.Errorf("authenticate: %w (%s: %s (error: %s, code: %d)",
 			err,
 			authResponse.Title,
 			authResponse.ErrorDescription,
@@ -78,10 +102,10 @@ func (c *Client) authenticate() error {
 			authResponse.Code)
 	}
 
-	c.accessToken = authResponse.AccessToken
-	c.expiration = time.Now().Add(time.Duration(authResponse.ExpiresIn) * time.Second)
+	return authResponse.AccessToken,
+		time.Now().Add(time.Duration(authResponse.ExpiresIn) * time.Second),
+		nil
 
-	return nil
 }
 
 type AuthResponse struct {
