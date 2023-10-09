@@ -38,6 +38,13 @@
   <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 
   <script>
+
+  // variables
+  var marker, searchMarker;
+  var streetAddress, houseNumber, city, zipCode, countryCode, latitude, longitude;
+  var airport;
+  var datetime;
+
   // Initialize the map
   var map = L.map('map').setView([48.8566, 2.3522], 12);
 
@@ -47,12 +54,6 @@
     maxZoom: 18,
   }).addTo(map);
   L.Control.geocoder().addTo(map);
-
-  // variables
-  var marker, searchMarker;
-  var streetAddress, houseNumber, city, zipCode, countryCode, latitude, longitude;
-  var airport;
-  var datetime;
 
   // Pre-set the datetime picker with the current time plus one day, adjusted to the current time zone
     var startDateTime = new Date();
@@ -146,15 +147,12 @@ const geocoderControl = L.Control.geocoder({
       });
     } else {
       document.getElementById('result').textContent = 'Please set a marker on the map.';
-      // Disable the Search button
-      document.getElementById('searchButton').disabled = true;
     }
   }
 
   // Retrieve the airport code from the dropdown box
   function getAirport() {
-    var airport = document.getElementById('airport').value;
-    return airport;
+    return document.getElementById('airport').value;
   }
 
   // Retrieve the picked date and time, adjust the time to UTC
@@ -168,6 +166,7 @@ const geocoderControl = L.Control.geocoder({
 
   // Hhandle button click and send data to the server
   function sendDataToServer() {
+    document.getElementById('searchButton').setAttribute('disabled', true);
     // Construct the query string with the address data
     var queryString =
       '/search?streetAddress=' +
@@ -195,8 +194,7 @@ const geocoderControl = L.Control.geocoder({
   }
 
   // Add event listener to the search button
-  var searchButton = document.getElementById('searchButton');
-  searchButton.addEventListener('click', sendDataToServer);
+  document.getElementById('searchButton').addEventListener('click', sendDataToServer);
 
     </script>
 </body>
