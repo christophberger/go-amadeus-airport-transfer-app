@@ -93,7 +93,7 @@ const offerListTemplate = `
 					<td>Estimated Cost</td>
 					<td>{{.Quotation.CurrencyCode}} {{.Quotation.MonetaryAmount}}</td>
 				</tr>
-					<td><button id="book" onclick="bookOffer('{{.ID}}')">Book this transfer</button></td>
+					<td><button class="book" onclick="bookOffer('{{.ID}}')">Book this transfer</button></td>
 					<td></td>
 				{{end}}
 			</table>
@@ -103,6 +103,9 @@ const offerListTemplate = `
 			<p><a href="/">New search</a></p>
 			<script>
 				function bookOffer(offerId) {
+					document.querySelectorAll(".book").forEach(function(bookButton) {
+						bookButton.disabled = true
+					})
 					var queryString = "/booking?offerId=" + offerId;
 					window.location.href = queryString;
 				}
