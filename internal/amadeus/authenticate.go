@@ -22,32 +22,38 @@ func (c *Client) token() (string, error) {
 
 // startTokenFetcher starts a goroutine that fetches a new access token from the Amadeus authentication API if there is none yet, or if the current one expires. It returns channels for returning the current token, or an error if the token could not be fetched.
 func (c *Client) startTokenFetcher() {
-	var token string
-	var expiration time.Time
-	var err error
-
-	c.accessTokenCh = make(chan string)
-	c.tokenErrorCh = make(chan error, 1)
-
 	go func() {
+		var token string
+		var expiration int
+		var err error
+
+		c.accessTokenCh = make(chan string)
+		c.tokenErrorCh = make(chan error, 1)
+
+		expired := time.After(0) // the timer fires immediately
+
 		for {
 			select {
-			case <-time.After(time.Until(expiration.Add(-60 * time.Second))):
-				// fetch new token from the API
+			case <-expired:
+				// fetch a new token from the API
 				token, expiration, err = authenticate(c.baseURL)
 				if err != nil {
 					c.tokenErrorCh <- err
 					return
 				}
+				// set the timer to fire 60 seconds before the token expires
+				expired = time.After(time.Duration(expiration-60) * time.Second)
+
 			case c.accessTokenCh <- token:
 				// someone has read the token, nothing to do
+				// the next iteration will send the token to the channel again
 			}
 		}
 	}()
 }
 
-// authenticate reads client ID and secret from the environment variables and updates the access token and expiration time from the Amadeus authentication API.
-func authenticate(baseURL string) (string, time.Time, error) {
+// authenticate reads client ID and secret from the environment variables and updates the access token and its lifespan (in seconds) from the Amadeus authentication API.
+func authenticate(baseURL string) (token string, lifespan int, err error) {
 
 	url := baseURL + "/security/oauth2/token"
 	method := "POST"
@@ -56,7 +62,7 @@ func authenticate(baseURL string) (string, time.Time, error) {
 	secret := os.Getenv("AMADEUS_CLIENT_SECRET")
 
 	if id == "" || secret == "" {
-		return "", time.Time{}, fmt.Errorf("authenticate: missing client ID or secret (check the environment variables AMADEUS_CLIENT_ID and AMADEUS_CLIENT_SECRET)")
+		return "", 0, fmt.Errorf("authenticate: missing client ID or secret (check the environment variables AMADEUS_CLIENT_ID and AMADEUS_CLIENT_SECRET)")
 	}
 
 	payload := strings.NewReader("client_id=" + id +
@@ -69,19 +75,19 @@ func authenticate(baseURL string) (string, time.Time, error) {
 	req, err := http.NewRequest(method, url, payload)
 
 	if err != nil {
-		return "", time.Time{}, fmt.Errorf("authenticate: http.NewRequest: %w", err)
+		return "", 0, fmt.Errorf("authenticate: http.NewRequest: %w", err)
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	res, err := client.Do(req)
 	if err != nil {
-		return "", time.Time{}, fmt.Errorf("authenticate: client.Do: %w", err)
+		return "", 0, fmt.Errorf("authenticate: client.Do: %w", err)
 	}
 	defer res.Body.Close()
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return "", time.Time{}, fmt.Errorf("authenticate: io.ReadAll: %w", err)
+		return "", 0, fmt.Errorf("authenticate: io.ReadAll: %w", err)
 	}
 
 	// Unmarshal the response. AuthResponse is a struct that combines
@@ -91,10 +97,10 @@ func authenticate(baseURL string) (string, time.Time, error) {
 	var authResponse AuthResponse
 	err = json.Unmarshal(body, &authResponse)
 	if err != nil {
-		return "", time.Time{}, fmt.Errorf("authenticate: json.Unmarshal: %w", err)
+		return "", 0, fmt.Errorf("authenticate: json.Unmarshal: %w", err)
 	}
 	if authResponse.Error != "" {
-		return "", time.Time{}, fmt.Errorf("authenticate: %w (%s: %s (error: %s, code: %d)",
+		return "", 0, fmt.Errorf("authenticate: %w (%s: %s (error: %s, code: %d)",
 			err,
 			authResponse.Title,
 			authResponse.ErrorDescription,
@@ -103,7 +109,7 @@ func authenticate(baseURL string) (string, time.Time, error) {
 	}
 
 	return authResponse.AccessToken,
-		time.Now().Add(time.Duration(authResponse.ExpiresIn) * time.Second),
+		authResponse.ExpiresIn,
 		nil
 
 }
