@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-// token returns the current access token. If none exists yet, or if the existing one has expired, it fetches a new one from the Amadeus authentication API. If fetching fails, token returns an error.
+// token returns the current access token. If none exists yet, or if the existing one has expired, it fetches a new one from the Amadeus authorization API. If fetching fails, token returns an error.
 func (c *Client) token() (string, error) {
 	if len(c.tokenErrorCh) > 0 { // works, because tokenErrorCh is buffered
 		e := <-c.tokenErrorCh
@@ -20,7 +20,7 @@ func (c *Client) token() (string, error) {
 	return t, nil
 }
 
-// startTokenFetcher starts a goroutine that fetches a new access token from the Amadeus authentication API if there is none yet, or if the current one expires. It returns channels for returning the current token, or an error if the token could not be fetched.
+// startTokenFetcher starts a goroutine that fetches a new access token from the Amadeus authorization API if there is none yet, or if the current one expires. It returns channels for returning the current token, or an error if the token could not be fetched.
 func (c *Client) startTokenFetcher() {
 	go func() {
 		var token string
@@ -36,7 +36,7 @@ func (c *Client) startTokenFetcher() {
 			select {
 			case <-expired:
 				// fetch a new token from the API
-				token, expiration, err = authenticate(c.baseURL)
+				token, expiration, err = authorize(c.baseURL)
 				if err != nil {
 					c.tokenErrorCh <- err
 					return
@@ -52,8 +52,8 @@ func (c *Client) startTokenFetcher() {
 	}()
 }
 
-// authenticate reads client ID and secret from the environment variables and updates the access token and its lifespan (in seconds) from the Amadeus authentication API.
-func authenticate(baseURL string) (token string, lifespan int, err error) {
+// authorize reads client ID and secret from the environment variables and updates the access token and its lifespan (in seconds) from the Amadeus authorization API.
+func authorize(baseURL string) (token string, lifespan int, err error) {
 
 	url := baseURL + "/security/oauth2/token"
 	method := "POST"
@@ -62,7 +62,7 @@ func authenticate(baseURL string) (token string, lifespan int, err error) {
 	secret := os.Getenv("AMADEUS_CLIENT_SECRET")
 
 	if id == "" || secret == "" {
-		return "", 0, fmt.Errorf("authenticate: missing client ID or secret (check the environment variables AMADEUS_CLIENT_ID and AMADEUS_CLIENT_SECRET)")
+		return "", 0, fmt.Errorf("authorize: missing client ID or secret (check the environment variables AMADEUS_CLIENT_ID and AMADEUS_CLIENT_SECRET)")
 	}
 
 	payload := strings.NewReader("client_id=" + id +
@@ -75,19 +75,19 @@ func authenticate(baseURL string) (token string, lifespan int, err error) {
 	req, err := http.NewRequest(method, url, payload)
 
 	if err != nil {
-		return "", 0, fmt.Errorf("authenticate: http.NewRequest: %w", err)
+		return "", 0, fmt.Errorf("authorize: http.NewRequest: %w", err)
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	res, err := client.Do(req)
 	if err != nil {
-		return "", 0, fmt.Errorf("authenticate: client.Do: %w", err)
+		return "", 0, fmt.Errorf("authorize: client.Do: %w", err)
 	}
 	defer res.Body.Close()
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return "", 0, fmt.Errorf("authenticate: io.ReadAll: %w", err)
+		return "", 0, fmt.Errorf("authorize: io.ReadAll: %w", err)
 	}
 
 	// Unmarshal the response. AuthResponse is a struct that combines
@@ -97,10 +97,10 @@ func authenticate(baseURL string) (token string, lifespan int, err error) {
 	var authResponse AuthResponse
 	err = json.Unmarshal(body, &authResponse)
 	if err != nil {
-		return "", 0, fmt.Errorf("authenticate: json.Unmarshal: %w", err)
+		return "", 0, fmt.Errorf("authorize: json.Unmarshal: %w", err)
 	}
 	if authResponse.Error != "" {
-		return "", 0, fmt.Errorf("authenticate: %w (%s: %s (error: %s, code: %d)",
+		return "", 0, fmt.Errorf("authorize: %w (%s: %s (error: %s, code: %d)",
 			err,
 			authResponse.Title,
 			authResponse.ErrorDescription,
