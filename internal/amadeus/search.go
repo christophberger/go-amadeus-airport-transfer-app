@@ -9,6 +9,10 @@ import (
 	"time"
 )
 
+// Search receives search parameters from the user and calls the 
+// Search Tranfer API to receive a list of transfer offers.
+// It returns a SearchResponse struct containing the list of offers, 
+// or an error if the search fails.
 func (c *Client) Search(p SearchParameters) (SearchResponse, error) {
 	url := c.baseURL + "/shopping/transfer-offers"
 	method := "POST"

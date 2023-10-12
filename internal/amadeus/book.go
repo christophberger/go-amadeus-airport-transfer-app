@@ -10,6 +10,9 @@ import (
 	"time"
 )
 
+// Book receives an offer ID that the user selects from the transfer
+// offers page, and returns a BookingResponse struct containing a booking
+// confirmation, or an error.
 func (c *Client) Book(offerId string) (BookingResponse, error) {
 
 	url := c.baseURL + "/ordering/transfer-orders?offerId=" + offerId
