@@ -12,12 +12,10 @@ import (
 
 // token returns the current access token. If none exists yet, or if the existing one has expired, it fetches a new one from the Amadeus authorization API. If fetching fails, token returns an error.
 func (c *Client) token() (string, error) {
-	if len(c.tokenErrorCh) > 0 { // works, because tokenErrorCh is buffered
-		e := <-c.tokenErrorCh
-		return "", e
+	if len(c.tokenErrorCh) > 0 { // works because tokenErrorCh is buffered
+		return "", <-c.tokenErrorCh
 	}
-	t := <-c.accessTokenCh
-	return t, nil
+	return <-c.accessTokenCh, nil
 }
 
 // startTokenFetcher starts a goroutine that fetches a new access token from the Amadeus authorization API if there is none yet, or if the current one expires. It returns channels for returning the current token, or an error if the token could not be fetched.
@@ -113,4 +111,3 @@ func authorize(baseURL string) (token string, lifespan int, err error) {
 		nil
 
 }
-
