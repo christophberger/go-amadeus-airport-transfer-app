@@ -9,9 +9,9 @@ import (
 	"time"
 )
 
-// Search receives search parameters from the user and calls the 
+// Search receives search parameters from the user and calls the
 // Search Tranfer API to receive a list of transfer offers.
-// It returns a SearchResponse struct containing the list of offers, 
+// It returns a SearchResponse struct containing the list of offers,
 // or an error if the search fails.
 func (c *Client) Search(p SearchParameters) (SearchResponse, error) {
 	url := c.baseURL + "/shopping/transfer-offers"
@@ -35,7 +35,7 @@ func (c *Client) Search(p SearchParameters) (SearchResponse, error) {
 
 	token, err := c.token()
 	if err != nil {
-		return SearchResponse{}, fmt.Errorf("Search: a.token: %w", err)
+		return SearchResponse{}, fmt.Errorf("Search: c.token: %w", err)
 	}
 
 	req.Header.Add("Content-Type", "application/json")
