@@ -12,46 +12,40 @@ import (
 
 // token returns the current access token. If none exists yet, or if the existing one has expired, it fetches a new one from the Amadeus authorization API. If fetching fails, token returns an error.
 func (c *Client) token() (string, error) {
-	if len(c.tokenErrorCh) > 0 { // works because tokenErrorCh is buffered
-		return "", <-c.tokenErrorCh
-	}
-	return <-c.accessTokenCh, nil
+	t := <-c.tok
+	return t.Token, t.Err
 }
 
 // startTokenFetcher starts a goroutine that fetches a new access token from the Amadeus authorization API if there is none yet, or if the current one expires. It returns channels for returning the current token, or an error if the token could not be fetched.
-func (c *Client) startTokenFetcher() {
-	go func() {
-		var token string
-		var expiration int
-		var err error
+func (c *Client) refreshToken() {
+	var token string
+	var expiration time.Duration
+	var err error
 
-		c.accessTokenCh = make(chan string)
-		c.tokenErrorCh = make(chan error, 1)
+	// Set the initial token, before any client can request it.
+	token, expiration, err = authorize(c.baseURL)
 
-		expired := time.After(0) // the timer fires immediately
+	// Set a new timer to fire when 90% of the expiration duration has passed.
+	// We want a new token *before* the current one expires.
+	expired := time.After(expiration * 90 / 100)
 
-		for {
-			select {
-			case <-expired:
-				// fetch a new token from the API
-				token, expiration, err = authorize(c.baseURL)
-				if err != nil {
-					c.tokenErrorCh <- err
-					return
-				}
-				// set the timer to fire 60 seconds before the token expires
-				expired = time.After(time.Duration(expiration-60) * time.Second)
+	for {
+		select {
+		// The expiration timer has fired and wrote the current time to `expired`.
+		case <-expired:
+			token, expiration, err = authorize(c.baseURL)
+			// Set a new timer to fire when 90% of the expiration duration has passed.
+			expired = time.After(expiration * 90 / 100)
 
-			case c.accessTokenCh <- token:
-				// someone has read the token, nothing to do
-				// the next iteration will send the token to the channel again
-			}
+		case c.tok <- tokenResponse{Token: token, Err: err}:
+			// Someone has read the token, nothing to do.
+			// The next iteration will send the token to the channel again.
 		}
-	}()
+	}
 }
 
 // authorize reads client ID and secret from the environment variables and updates the access token and its lifespan (in seconds) from the Amadeus authorization API.
-func authorize(baseURL string) (token string, lifespan int, err error) {
+func authorize(baseURL string) (token string, lifespan time.Duration, err error) {
 
 	url := baseURL + "/security/oauth2/token"
 	method := "POST"
@@ -107,7 +101,7 @@ func authorize(baseURL string) (token string, lifespan int, err error) {
 	}
 
 	return authResponse.AccessToken,
-		authResponse.ExpiresIn,
+		time.Duration(authResponse.ExpiresIn) * time.Second,
 		nil
 
 }
