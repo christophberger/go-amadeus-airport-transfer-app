@@ -12,7 +12,7 @@ import (
 
 // token returns the current access token. If none exists yet, or if the existing one has expired, it fetches a new one from the Amadeus authorization API. If fetching fails, token returns an error.
 func (c *Client) token() (string, error) {
-	t := <-c.tok
+	t := <-c.accessToken
 	return t.Token, t.Err
 }
 
@@ -37,7 +37,7 @@ func (c *Client) refreshToken() {
 			// Set a new timer to fire when 90% of the expiration duration has passed.
 			expired = time.After(expiration * 90 / 100)
 
-		case c.tok <- tokenResponse{Token: token, Err: err}:
+		case c.accessToken <- tokenResponse{Token: token, Err: err}:
 			// Someone has read the token, nothing to do.
 			// The next iteration will send the token to the channel again.
 		}

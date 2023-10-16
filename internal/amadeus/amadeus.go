@@ -12,21 +12,21 @@ type tokenResponse struct {
 // in the background while serving the currently valid
 // token to clients
 type Client struct {
-	baseURL string
-	tok     chan tokenResponse
+	baseURL     string
+	accessToken chan tokenResponse
 }
 
 // Create a new client and start the token refreshing goroutine.
 func New() *Client {
 	c := &Client{
-		baseURL: "https://test.api.amadeus.com/v1",
-		tok:     make(chan tokenResponse),
+		baseURL:     "https://test.api.amadeus.com/v1",
+		accessToken: make(chan tokenResponse),
 	}
 	go c.refreshToken()
 	return c
 }
 
-// AuthResponse contains the unmarshaled response from the Amadeus 
+// AuthResponse contains the unmarshaled response from the Amadeus
 // authorization API.
 // It is a blend of the success and error response, so that we can
 // unmarshal the response first and check for success or error later.
