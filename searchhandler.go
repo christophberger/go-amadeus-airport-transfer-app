@@ -4,7 +4,7 @@ import (
 	"html/template"
 	"net/http"
 
-	"github.com/christophberger/go-amadeus-airport-transfer-app/internal/amadeus"
+	"airport-transfer-app/internal/amadeus"
 )
 
 // SearchHandler receives a query URL containing start address and airport code, queries the Amadeus Transfer Search API, and renders a new page with a list of offers, or a message if there are no offers available.

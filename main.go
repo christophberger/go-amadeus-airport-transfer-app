@@ -5,7 +5,7 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/christophberger/go-amadeus-airport-transfer-app/internal/amadeus"
+	"airport-transfer-app/internal/amadeus"
 )
 
 type app struct {
