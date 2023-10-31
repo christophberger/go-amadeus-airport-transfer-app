@@ -47,7 +47,7 @@ func (c *Client) Search(p SearchParameters) (SearchResponse, error) {
 	}
 	defer res.Body.Close()
 
-	// Read the response body and unmarshall it into a SearchResponse variable
+	// Read the response body and unmarshal it into a SearchResponse variable
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
@@ -67,7 +67,7 @@ func (c *Client) Search(p SearchParameters) (SearchResponse, error) {
 		return SearchResponse{}, fmt.Errorf("Search failed: %s: %s (code %d)", errorResult.Errors[0].Title, errorResult.Errors[0].Detail, errorResult.Errors[0].Code)
 	}
 
-	// Unmarshall the response into a SearchResponse struct
+	// Unmarshal the response into a SearchResponse struct
 	result := SearchResponse{}
 	err = json.Unmarshal(body, &result)
 	if err != nil {
